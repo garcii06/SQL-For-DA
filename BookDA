@@ -1,0 +1,414 @@
+SELECT email
+FROM customers
+WHERE state = 'FL'
+ORDER BY email ASC;
+
+SELECT first_name, last_name, email
+FROM customers
+WHERE state = 'NY' AND city = 'New York City'
+ORDER BY last_name, first_name;
+
+SELECT *
+FROM customers
+WHERE phone IS NOT NULL
+ORDER BY date_added ASC;
+
+-- Create blank table
+CREATE TABLE countries_exercise(
+    key INT PRIMARY KEY,
+    name text UNIQUE,
+    founding_year INT,
+    capital text
+);
+
+-- Create table with SELECT
+CREATE TABLE products_2014 AS(
+    SELECT *
+    FROM products
+    WHERE year = 2014
+);
+
+-- Updating values
+UPDATE products
+SET base_msrp = base_msrp*1.10
+WHERE model = 'Model Chi' AND year = 2019;
+
+SELECT *
+FROM products
+WHERE model = 'Model Chi' AND year = 2019;
+
+-- Removing values from rows
+UPDATE customers
+SET email = NULL
+WHERE customer_id = 3;
+
+-- Deleting tables
+DROP TABLE state_populations;
+DROP TABLE countries_exercise;
+
+-- Start of Activity 4: Marketing Operations
+CREATE TABLE customers_nyc AS(
+    SELECT *
+    FROM customers
+    WHERE state = 'NY' AND city = 'New York City'
+);
+
+DELETE FROM customers_nyc
+WHERE postal_code = '10014';
+
+ALTER TABLE customers_nyc
+ADD COLUMN event text;
+
+UPDATE customers_nyc
+SET event = 'thank-you party';
+
+SELECT *
+FROM customers_nyc
+LIMIT 100;
+
+DROP TABLE customers_nyc;
+-- End of Activity 4: Marketing Operations
+
+-- Inner join example
+SELECT salespeople.*
+FROM salespeople INNER JOIN dealerships
+ON salespeople.dealership_id = dealerships.dealership_id
+WHERE dealerships.state = 'CA'
+ORDER BY 1;
+
+-- Left join example
+SELECT *
+FROM customers cust LEFT JOIN emails emai On cust.customer_id = emai.customer_id
+WHERE emai.customer_id IS NULL
+ORDER BY cust.customer_id
+LIMIT 1000;
+
+-- Right join example
+SELECT *
+FROM emails emai RIGHT JOIN customers cust ON cust.customer_id = emai.customer_id
+ORDER BY cust.customer_id
+LIMIT 1000;
+
+-- Cross join example
+SELECT p1.product_id, p1.model, p2.product_id, p2.model
+FROM products p1 CROSS JOIN products p2;
+
+-- Start of Exercise 10: Using Joins to Analyze Sales Dealership
+SELECT cust.customer_id, cust.first_name, cust.last_name, cust.phone
+FROM sales sale 
+JOIN customers cust ON sale.customer_id = cust.customer_id
+JOIN products prod ON sale.product_id = prod.product_id
+WHERE prod.product_type = 'automobile' AND cust.phone IS NOT NULL;
+End of Exercise 10: Using Joins to Analyze Sales Dealership
+-- End of Exercise 10: Using Joins to Analyze Sales Dealership
+
+-- Unions
+(
+SELECT street_address, city, state, postal_code
+FROM customers
+WHERE street_address IS NOT NULL
+)
+UNION
+(
+SELECT street_address, city, state, postal_code
+FROM dealerships
+WHERE street_address IS NOT NULL
+)
+ORDER BY 1;
+
+-- Start of Exercise 11: Generating an Elite Customer Party Guest List using UNION
+(
+SELECT first_name, last_name, 'Customer' AS guest_type
+FROM customers
+WHERE state = 'CA' and city = 'Los Angeles'
+)
+UNION 
+(
+SELECT first_name, last_name, 'Employee' AS guest_type
+FROM salespeople speo JOIN dealerships deal 
+    ON speo.dealership_id = deal.dealership_id
+WHERE deal.state = 'CA' and deal.city = 'Los Angeles'  
+)
+-- End of Exercise 11: Generating an Elite Customer Party Guest List using UNION
+
+-- Case
+SELECT *, CASE 
+    WHEN postal_code = '33111' THEN 'Elite Customer' 
+    WHEN postal_code = '33124' THEN 'Premium Customer' 
+    ELSE 'Standard Customer'
+END AS customer_type
+FROM customers;
+
+-- Start of Exercise 12: Using the CASE WHEN Function to Get Regional Lists
+SELECT customer_id, CASE 
+    WHEN state in ('MA', 'NH', 'VT', 'ME', 'CT', 'RI') THEN 'New England'
+    WHEN state in ('GA', 'FL', 'MS', 'AL', 'LA', 'KY', 'VA', 'NC', 'SC', 'TN','VI','WV','AR') THEN 'Southeast'
+    ELSE 'Other'
+END AS Region
+FROM customers
+ORDER BY 1;
+-- End of Exercise 12: Using the CASE WHEN Function to Get Regional Lists
+
+-- Coalesce
+SELECT first_name, last_name, COALESCE(phone, 'No phone') AS phone
+FROM customers;
+
+-- NULLIF
+SELECT customer_id, NULLIF(title, 'Honorable') as title ,first_name, last_name, suffix, email, gender, ip_address, phone,
+street_address, city, state, postal_code, latitude, longitude, date_added
+FROM customers
+ORDER BY customer_id;
+
+-- LEAST/GREATEST
+SELECT product_id, model, year, product_type,LEAST(600.00, base_msrp) AS base_msrp, production_start_date, production_end_date
+FROM products
+WHERE product_type = 'scooter'
+ORDER BY product_id;
+
+-- CASTING
+SELECT product_id, model, year::TEXT, product_type, base_msrp, production_start_date, production_end_date
+FROM products;
+
+-- Start of Activity 5: Building a Sales Model Using SQL Techniques
+SELECT cust.*, prod.*, COALESCE(sale.dealership_id, -1) as dealership_id,CASE
+WHEN (prod.base_msrp - sale.sales_amount) > 500 THEN 1
+ELSE 0
+      END AS high_savings
+FROM customers cust 
+JOIN sales sale ON cust.customer_id = sale.customer_id
+JOIN products prod ON sale.product_id = prod.product_id
+LEFT JOIN dealerships deal ON sale.dealership_id = deal.dealership_id
+-- End of Activity 5: Building a Sales Model Using SQL Techniques
+
+-- Aggregate Functions
+SELECT MIN(base_msrp), MAX(base_msrp), AVG(base_msrp), STDDEV(base_msrp)
+FROM products;
+
+SELECT state, COUNT(*)
+FROM customers
+GROUP BY state
+ORDER BY COUNT(*);
+
+SELECT state, gender, COUNT(*)
+FROM customers
+GROUP BY state, gender
+ORDER BY state, gender;
+
+-- Start of Exercise 14: Calculating the Cost by Product Type Using GROUP BY
+SELECT product_type, MIN(base_msrp), MAX(base_msrp), AVG(base_msrp), STDDEV(base_msrp)
+FROM products
+GROUP BY product_type
+ORDER BY product_type;
+End of Exercise 14: Calculating the Cost by Product Type Using GROUP BY
+
+-- Grouping sets by UNION ALL
+(
+    SELECT state, NULL as gender, COUNT(*)
+    FROM customers
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+)
+UNION ALL
+(
+    (
+    SELECT state, gender, COUNT(*)
+    FROM customers
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+    )
+)
+ORDER BY 1, 2;
+
+-- Grouping sets by GROUPING SETS
+SELECT state, gender, COUNT(*)
+FROM customers
+GROUP BY GROUPING SETS ((state),(gender),(state, gender))
+ORDER BY state, gender;
+
+-- Ordered Set Aggregates
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY base_msrp) AS median
+FROM products;
+
+-- Start of Exercise 15: Calculating and Displaying Data Using the HAVING Clause
+SELECT state, COUNT(*)
+FROM customers
+GROUP BY state
+HAVING count(*) >= 1000
+ORDER BY state;
+-- End of Exercise 15: Calculating and Displaying Data Using the HAVING Clause
+
+-- Finding Missing Values with GROUP BY
+SELECT (SUM(CASE WHEN state IS NULL OR state in ('') THEN 1 ELSE 0 END)::FLOAT/COUNT(*))*100 AS missing_state_pert
+FROM customers;
+
+-- Measuring Data Quality
+SELECT COUNT(DISTINCT customer_id) = COUNT(*) AS equal_ids , COUNT(DISTINCT first_name) = COUNT(*) AS equal_name
+FROM customers;
+
+-- Start of Activity 6: Analyzing Sales Data Using Aggregate Functions
+    -- Calculate the total number of unit sales the company has done
+SELECT COUNT(*)
+FROM sales;
+    -- Calculate the total sales amount in dollars for each state.
+SELECT state, SUM(sales_amount) AS total_sales
+FROM customers cust JOIN sales sale ON cust.customer_id = sale.customer_id
+GROUP BY state
+ORDER BY state;
+    -- Identify the top five best dealerships in terms of the most units sold (ignore  internet sales)
+SELECT dealership_id, COUNT(*)
+FROM sales
+WHERE channel NOT IN ('internet')
+GROUP BY dealership_id
+ORDER BY COUNT(*) DESC
+LIMIT 5;
+    -- Calculate the average sales amount for each channel, as seen in the sales table, 
+    -- and look at the average sales amount first by channel sales, then by product_id, and 
+    -- then by both together.
+SELECT COALESCE(channel, 'Dealership and internet') AS channel, product_id, AVG(sales_amount) as avg_sales_amount
+FROM sales
+GROUP BY GROUPING SETS ((channel), (product_id), (channel, product_id))
+ORDER BY channel, product_id;
+-- End of Activity 6: Analyzing Sales Data Using Aggregate Functions
+
+-- Window functions
+SELECT customer_id, title, first_name, last_name, gender, COUNT(*) OVER (PARTITION BY gender) as total_customers
+FROM customers
+ORDER by customer_id;
+
+SELECT customer_id, title, first_name, last_name, gender, COUNT(*) OVER (ORDER BY customer_id) as total_customers
+FROM customers
+ORDER by customer_id;
+
+SELECT customer_id, title, first_name, last_name, gender, COUNT(*) OVER (PARTITION BY gender ORDER BY customer_id) as total_customers
+FROM customers
+ORDER by customer_id;
+
+-- Start of Exercise 16: Analyzing Customer Data Fill Rates over Time
+SELECT customer_id, street_address, date_added::DATE,
+COUNT(CASE WHEN street_address IS NOT NULL THEN customer_id ELSE NULL END)
+OVER (ORDER BY date_added::DATE) AS total_customers_filled_street
+FROM customers
+ORDER BY date_added;
+-- End of Exercise 16: Analyzing Customer Data Fill Rates over Time
+
+SELECT customer_id, title, first_name, last_name, gender,
+COUNT(*) OVER (PARTITION BY gender ORDER BY customer_id) AS total_customers,
+SUM(CASE WHEN title IS NOT NULL THEN 1 ELSE 0 END) 
+OVER (PARTITION BY gender ORDER BY customer_id) AS total_customers_title
+FROM customers
+ORDER BY customer_id;
+
+-- Window Keyword
+SELECT customer_id, title, first_name, last_name, gender, COUNT(*) 
+OVER w as total_customers,
+SUM(CASE WHEN title IS NOT NULL THEN 1 ELSE 0 END) 
+OVER w as total_customers_title
+FROM customers
+WINDOW w AS (PARTITION BY gender ORDER BY customer_id)
+ORDER BY customer_id;
+
+-- Start of Exercise 17: Rank Order of Hiring
+SELECT *, RANK() OVER (PARTITION BY dealership_id ORDER BY hire_date)
+FROM salespeople
+WHERE termination_date IS NULL;
+-- End of Exercise 17: Rank Order of Hiring
+
+-- Rolling Average
+WITH daily_sales AS (
+    SELECT sales_transaction_date::DATE, SUM(sales_amount) as total_sales
+    FROM sales
+    GROUP BY sales_transaction_date::DATE
+),
+moving_average_calculation_7 AS (
+    SELECT sales_transaction_date, total_sales, 
+    AVG(total_sales) OVER (ORDER BY sales_transaction_date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW)
+    AS sales_moving_average_7,
+    ROW_NUMBER() OVER (ORDER BY sales_transaction_date) AS row_num
+    FROM daily_sales
+    ORDER BY sales_transaction_date
+)
+SELECT sales_transaction_date, CASE
+WHEN row_num >= 7 THEN sales_moving_average_7 ELSE NULL END AS sales_moving_average_7
+FROM moving_average_calculation_7;
+
+-- Start of Exercise 18: Team Lunch Motivation
+WITH daily_sales AS (
+    SELECT sales_transaction_date::DATE, SUM(sales_amount) AS total_sales
+    FROM sales
+    GROUP BY sales_transaction_date::DATE
+),
+sales_stats_30 AS (
+    SELECT sales_transaction_date::DATE, total_sales,
+    MAX(total_sales) OVER (ORDER BY sales_transaction_date ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING)
+    AS max_sales_30
+    FROM daily_sales
+    ORDER By sales_transaction_date::DATE
+)
+SELECT sales_transaction_date, total_sales, max_sales_30
+FROM sales_stats_30
+WHERE sales_transaction_date >= '2019-01-01';
+-- End of Exercise 18: Team Lunch Motivation
+
+-- Start of Activity 7: Analyzing Sales Using Window Frames and Window Functions
+    -- Calculate the total sales amount by day for all of the days in the year 2018 (that is, 
+    -- before the date January 1, 2019).
+SELECT sales_transaction_date::DATE, SUM(sales_amount) AS total_sales_amount
+FROM sales
+WHERE sales_transaction_date >= '2018-01-01' AND sales_transaction_date < '2019-01-01'
+GROUP BY sales_transaction_date::DATE
+ORDER BY sales_transaction_date::DATE;
+
+    -- Calculate the rolling 30-day average for the daily number of sales deals
+WITH daily_deals AS (
+    SELECT sales_transaction_date::DATE, COUNT(*) AS total_deals
+    FROM sales
+    GROUP BY sales_transaction_date::DATE
+),
+moving_average_calculation_30 AS (
+    SELECT sales_transaction_date, total_deals, 
+    AVG(total_deals) OVER (ORDER BY sales_transaction_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW)
+    AS deals_moving_average,
+    ROW_NUMBER() OVER (ORDER BY sales_transaction_date) AS row_num
+    FROM daily_deals
+    ORDER BY sales_transaction_date
+) 
+SELECT sales_transaction_date,
+CASE WHEN row_num >= 30 THEN deals_moving_average ELSE NULL END AS deals_moving_average_30
+FROM moving_average_calculation_30
+WHERE sales_transaction_date >= '2018-01-01' AND sales_transaction_date < '2019-01-01';
+
+    -- Calculate what decile each dealership would be in compared to other dealerships 
+    -- based on their total sales amount.
+WITH total_dealership_sales AS (
+    SELECT dealership_id, SUM(sales_amount) AS total_sales_amount
+    FROM sales
+    WHERE sales_transaction_date >= '2018-01-01' AND sales_transaction_date < '2019-01-01'
+    AND channel = 'dealership'
+    GROUP BY dealership_id
+)
+SELECT *, NTILE(10) OVER (ORDER BY total_sales_amount)
+FROM total_dealership_sales;
+-- End of Activity 7: Analyzing Sales Using Window Frames and Window Functions
+
+
+
+WITH daily_sales as (
+    SELECT sales_transaction_date::DATE,
+    SUM(sales_amount) as total_sales
+    FROM sales
+    GROUP BY 1
+    ORDER BY 1
+),
+sales_stats_30 AS (
+    SELECT sales_transaction_date, total_sales,
+    MAX(total_sales) OVER (ORDER BY sales_transaction_date ROWS BETWEEN 30 
+    PRECEDING and 1 PRECEDING) 
+    AS max_sales_30
+    FROM daily_sales
+    ORDER BY 1
+)
+SELECT sales_transaction_date,
+total_sales,
+max_sales_30
+FROM sales_stats_30
+WHERE sales_transaction_date>='2019-01-01';
