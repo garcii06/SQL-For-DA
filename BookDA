@@ -390,8 +390,6 @@ SELECT *, NTILE(10) OVER (ORDER BY total_sales_amount)
 FROM total_dealership_sales;
 -- End of Activity 7: Analyzing Sales Using Window Frames and Window Functions
 
-
-
 WITH daily_sales as (
     SELECT sales_transaction_date::DATE,
     SUM(sales_amount) as total_sales
@@ -412,3 +410,34 @@ total_sales,
 max_sales_30
 FROM sales_stats_30
 WHERE sales_transaction_date>='2019-01-01';
+
+-- Start of Activity 8: Using an External Dataset to Discover Sales Trends
+    -- Previous steps are in jupyter notebook
+SELECT MAX(public_transportation_pct) AS max_pct, MIN(public_transportation_pct) AS min_pct
+FROM public_transportation_by_zip;
+
+    -- Calculate the average sales amounts for customers that live in high public 
+    -- transportation regions (over 10%) as well as low public transportation usage (less 
+    -- than, or equal to, 10%)
+SELECT (public_transportation_pct > 10) as high_pct, 
+COUNT(sale.customer_id) * 1.0 / COUNT(DISTINCT cust.customer_id) AS sales_per_customer
+FROM customers cust INNER JOIN public_transportation_by_zip ptbz
+    ON cust.postal_code = ptbz.zip_code LEFT JOIN sales sale ON cust.customer_id = sale.customer_id
+WHERE public_transportation_pct >= 0
+GROUP BY high_pct;
+
+    -- Group customers based on their zip code public transportation usage, rounded 
+    -- to the nearest 10%, and look at the average number of transactions per customer. 
+    -- Export this data to Excel and create a scatterplot to better understand the 
+    -- relationship between public transportation usage and sales.
+CREATE TEMP VIEW public_transportation_statitics AS (
+SELECT 10 * ROUND(public_transportation_pct/10) AS public_transport,
+    COUNT(sale.customer_id) * 1.0 / COUNT(DISTINCT cust.customer_id) AS sales_per_customer
+FROM customers cust INNER JOIN public_transportation_by_zip ptbz
+    ON cust.postal_code = ptbz.zip_code LEFT JOIN sales sale ON cust.customer_id = sale.customer_id
+WHERE public_transportation_pct >= 0
+GROUP BY public_transport
+);
+-- on psql \copy (SELECT * FROM public_transportation_statitics) TO 'C:\Users\WINDOWS\Downloads\DA Books\public_transport_distribution.csv' CSV HEADER;
+
+-- End of Activity 8: Using an External Dataset to Discover Sales Trends
