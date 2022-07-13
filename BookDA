@@ -441,3 +441,59 @@ GROUP BY public_transport
 -- on psql \copy (SELECT * FROM public_transportation_statitics) TO 'C:\Users\WINDOWS\Downloads\DA Books\public_transport_distribution.csv' CSV HEADER;
 
 -- End of Activity 8: Using an External Dataset to Discover Sales Trends
+
+-- Dates
+SHOW DateStyle;
+SET DateStyle='ISO, MDY';
+    -- Same result
+SELECT '1/8/1999'::DATE;
+SELECT '1-8-1999'::DATE;
+SELECT '1.8.1999'::DATE;
+
+SELECT current_date;
+
+-- Timestamp
+SELECT now() AT TIME ZONE 'EST';
+SELECT now();
+
+-- Transforming Date types
+SELECT current_date, 
+    EXTRACT(year FROM current_date) AS year,
+    EXTRACT(month FROM current_date) AS month,
+    EXTRACT(day FROM current_date) AS day,
+    EXTRACT(dow FROM current_date) AS day_of_week,
+    EXTRACT(isodow FROM current_date) AS day_of_week_iso,
+    EXTRACT(week FROM current_date) AS week_of_year,
+    EXTRACT(quarter FROM current_date) AS quarter;
+    
+SELECT NOW(), DATE_TRUNC('month', NOW());
+
+-- Date_truncate
+SELECT DATE_TRUNC('quarter', NOW()) AS quarter, SUM(sales_amount) AS total_quarterly_sales
+FROM sales
+GROUP BY 1
+ORDER BY 1 DESC;
+
+-- Intervals
+SELECT INTERVAL '5 days';
+SELECT TIMESTAMP '2016-03-01 00:00:00' - TIMESTAMP '2016-02-01 00:00:00' AS days_in_feb;
+SELECT TIMESTAMP '2016-03-01 00:00:00' + INTERVAL '7 days' AS new_date;
+    --Same result achived using the DATE type and int
+SELECT DATE '2016-03-01' + 7 AS new_date;
+SELECT DATE '2016-03-01' - DATE '2016-02-01' AS days_in_feb;
+
+-- Start of Exercise 22: Analytics with Time Series Data
+    --  First, let's look at the number of monthly sales from 2018.
+SELECT DATE_TRUNC('month', sales_transaction_date) AS month_date,
+COUNT(1) AS num_of_sales
+FROM sales
+WHERE EXTRACT(year FROM sales_transaction_date) = 2018
+GROUP BY 1
+ORDER BY 1;
+    -- Next, we can look at how this compares with the number of new customers joining each month
+SELECT DATE_TRUNC('month', date_added) AS month_date, COUNT(1) AS num_joining_customers
+FROM customers
+WHERE EXTRACT(year FROM date_added) = 2018
+GROUP BY 1
+ORDER BY 1;
+-- End of Exercise 22: Analytics with Time Series Data
