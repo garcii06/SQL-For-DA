@@ -497,3 +497,47 @@ WHERE EXTRACT(year FROM date_added) = 2018
 GROUP BY 1
 ORDER BY 1;
 -- End of Exercise 22: Analytics with Time Series Data
+
+-- Geospatial Latitude and Longitude
+SELECT latitude, longitude
+FROM customers
+LIMIT 10;
+
+-- Packages for working on geospatial coordinates, only run once.
+CREATE EXTENSION cube;
+CREATE EXTENSION earthdistance;
+
+SELECT POINT(longitude, latitude)
+FROM customers
+LIMIT 10;
+
+-- Distance between points
+SELECT POINT(-90, 38) <@> POINT(-91, 37) AS distance_in_miles;
+
+-- Start of Exercise 23: Geospatial Analysis
+CREATE TEMP TABLE customers_points AS(
+    SELECT customer_id, POINT(longitude, latitude) AS lon_lat_point
+    FROM customers
+    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+);
+
+CREATE TEMP TABLE dealerships_points AS(
+    SELECT dealership_id, POINT(longitude, latitude) AS lon_lat_point
+    FROM dealerships
+);
+
+CREATE TEMP TABLE customer_dealership_distance AS (
+    SELECT customer_id, dealership_id, cust.lon_lat_point <@> dshp.lon_lat_point AS distance
+    FROM customers_points cust CROSS JOIN dealerships_points dshp
+);
+
+CREATE TEMP TABLE closest_dealership AS(
+    SELECT DISTINCT ON(customer_id) customer_id, dealership_id, distance
+    FROM customer_dealership_distance
+    ORDER BY customer_id, distance    
+);
+
+SELECT AVG(distance) AS avg_distance, 
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY distance) as median_distance
+FROM closest_dealership;
+-- End of Exercise 23: Geospatial Analysis
