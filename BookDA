@@ -99,7 +99,6 @@ FROM sales sale
 JOIN customers cust ON sale.customer_id = cust.customer_id
 JOIN products prod ON sale.product_id = prod.product_id
 WHERE prod.product_type = 'automobile' AND cust.phone IS NOT NULL;
-End of Exercise 10: Using Joins to Analyze Sales Dealership
 -- End of Exercise 10: Using Joins to Analyze Sales Dealership
 
 -- Unions
@@ -541,3 +540,85 @@ SELECT AVG(distance) AS avg_distance,
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY distance) as median_distance
 FROM closest_dealership;
 -- End of Exercise 23: Geospatial Analysis
+
+-- Arrays
+SELECT ARRAY['Lemon', 'Bat Limited Edition'] AS example_purchased_products;
+
+-- Aggregate Array
+SELECT product_type, ARRAY_AGG(DISTINCT model) AS models
+FROM products
+GROUP BY product_type;
+
+-- Unnest arrays
+SELECT UNNEST(ARRAY[123, 456, 789]) AS example_ids;
+
+-- String to array
+SELECT STRING_TO_ARRAY('Hello there how are you', ' ');
+
+-- Array to string
+SELECT ARRAY_TO_STRING(ARRAY['Lemon', 'Bat Limited Edition'], ', ') AS example_purchased_products;
+
+-- JSON files
+SELECT row_to_json(cust)
+FROM customers cust
+LIMIT 1;
+
+-- Readability of JSON on psql 
+SELECT row_to_json(cust, TRUE)
+FROM customers cust
+LIMIT 1;
+
+-- Accessing data from JSON or BJSON field
+SELECT '{
+    "key_a":1,
+    "key_b":50
+}'::JSON -> 'key_b' AS data;
+
+SELECT '{
+    "key_a": 1,
+    "key_b":[
+        {"d": 4},
+        {"d": 6},
+        {"d": 5},
+        {"a": 99}
+    ],
+    "key_c":3
+}'::JSON #> ARRAY['key_b', '3', 'a'] AS data;
+
+-- JSONB additional functionality
+SELECT *
+FROM customer_sales
+WHERE customer_json @> '{"customer_id":20}'::JSONB;
+
+-- JSONB_PRETTY on psql
+SELECT JSONB_PRETTY(customer_json)
+FROM customer_sales
+WHERE customer_json @> '{"customer_id":20}'::JSONB; 
+
+-- Select the keys and unnest
+SELECT JSONB_OBJECT_KEYS(customer_json) AS keys,
+customer_json -> JSONB_OBJECT_KEYS(customer_json) AS values
+FROM customer_sales
+WHERE customer_json @> '{"customer_id":20}'::JSONB;
+
+-- Add into JSONB
+SELECT jsonb_insert('{"key_a":1,"key_b":"2"}', ARRAY['key_c'], '3');
+
+-- Insert into a nested JSONB
+SELECT jsonb_insert('{"key_a":1,"key_b":"2","key_c":[50,60,80,90]}', ARRAY['key_c','2'], '70');
+
+-- Remove key
+SELECT '{"key_a":1, "key_b":2}'::JSONB - 'key_b';
+
+-- Start of Exercise 24: Searching through JSONB
+
+CREATE TEMP TABLE customers_sales_single_sale_json AS(
+    SELECT customer_json, JSONB_ARRAY_ELEMENTS(customer_json -> 'sales') AS sale_json
+    FROM customer_sales
+    LIMIT 10
+);
+SELECT DISTINCT customer_json
+FROM customers_sales_single_sale_json
+WHERE sale_json ->> 'product_name' = 'Blade';       --Returns text
+-- WHERE sale_json @> '{"product_name":"Blade"}';   --Returns jsonb
+-- End of Exercise 24: Searching through JSONB
