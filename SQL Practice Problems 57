@@ -1,0 +1,102 @@
+-- Introductory problems
+-- 1. Which shippers do we have?
+SELECT *
+FROM Northwind..Shippers;
+
+-- 2. Certain fields from Categories
+SELECT CategoryName, Description
+FROM Northwind..Categories;
+
+-- 3. Sales Representatives
+SELECT FirstName, LastName, HireDate
+FROM Northwind..Employees
+WHERE Title IN ('Sales Representative');
+
+-- 4. Sales Representatives in the United States
+SELECT FirstName, LastName, HireDate
+FROM Northwind..Employees
+WHERE Title IN ('Sales Representative') AND Country IN ('USA');
+
+-- 5. Orders placed by specific EmployeeID
+SELECT OrderID, OrderDate
+FROM Northwind..Orders
+WHERE EmployeeID = 5;
+
+-- 6. Suppliers and ContactTitles
+SELECT SupplierID, ContactName, ContactTitle
+FROM Northwind..Suppliers
+WHERE ContactTitle NOT IN ('Marketing Manager');
+
+-- 7. Products with “queso” in ProductName
+SELECT ProductID, ProductName
+FROM Northwind..Products
+WHERE ProductName LIKE '%queso%';
+
+-- 8. Orders shipping to France or Belgium
+SELECT OrderID, CustomerID, ShipCountry
+FROM Northwind..Orders
+WHERE ShipCountry IN ('France', 'Belgium');
+
+-- 9. Orders shipping to any country in Latin America
+SELECT OrderID, CustomerID, ShipCountry
+FROM Northwind..Orders
+WHERE ShipCountry IN ('Brazil', 'Mexico', 'Argentina', 'Venezuela');
+
+-- 10. Employees, in order of age
+SELECT FirstName, LastName, Title, BirthDate
+FROM Northwind..Employees
+ORDER BY BirthDate;
+
+-- 11. Showing only the Date with a DateTime field
+SELECT FirstName, LastName, Title, CONVERT(DATE,BirthDate) AS BirthDate
+FROM Northwind..Employees
+ORDER BY BirthDate;
+
+-- 12. Employees full name
+SELECT FirstName, LastName, CONCAT(FirstName, ' ', LastName) AS FullName
+FROM Northwind..Employees;
+
+-- 13. OrderDetails amount per line item
+SELECT OrderID, ProductID, UnitPrice, Quantity, (UnitPrice * Quantity) AS TotalPrice
+FROM Northwind..OrderDetails
+ORDER BY OrderID, ProductID;
+
+-- 14. How many customers?
+SELECT COUNT(CustomerID) AS TotalCustomers
+FROM Northwind..Customers;
+
+-- 15. When was the first order?
+-- Same result
+--SELECT TOP 1 OrderDate AS FirstOrder
+--FROM Northwind..Orders
+--ORDER BY OrderDate;
+SELECT MIN(OrderDate) AS FirstOrder
+FROM Northwind..Orders;
+
+-- 16. Countries where there are customers
+SELECT DISTINCT Country
+FROM Northwind..Customers;
+-- Same result
+--SELECT Country
+--FROM Northwind..Customers
+--GROUP BY Country;
+
+-- 17. Contact titles for customers
+SELECT ContactTitle, COUNT(*) AS TotalContactTitle
+FROM Northwind..Customers
+GROUP By ContactTitle
+ORDER BY TotalContactTitle DESC;
+
+-- 18. Products with associated supplier names
+SELECT ProductID, ProductName, CompanyName
+FROM Northwind..Products prod JOIN Northwind..Suppliers supp 
+ON prod.SupplierID = supp.SupplierID
+ORDER BY ProductID;
+
+-- 19. Orders and the Shipper that was used
+SELECT OrderID, CONVERT(DATE, OrderDate) AS OrderDate, CompanyName
+FROM Orders ords JOIN Shippers shps 
+ON ords.ShipVia = shps.ShipperID
+WHERE OrderID < 10300;
+
+-- Intermediate Problems
