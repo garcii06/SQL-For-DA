@@ -798,3 +798,68 @@ EXPLAIN ANALYZE SELECT * FROM emails WHERE email_subject = 'Black Friday. Green 
 
 CREATE INDEX ix_customer_id ON emails USING HASH(customer_id);
 -- End of Activity 12: Implementing Hash Indexes
+
+-- Start of Exercise 30: Creating Functions without Arguments
+CREATE FUNCTION fixed_val() RETURNS integer AS $$
+BEGIN
+RETURN 1;
+END; $$
+LANGUAGE PLPGSQL;
+SELECT * FROM fixed_val();
+
+CREATE FUNCTION num_samples() RETURNS integer AS $total$
+DECLARE total integer;
+BEGIN
+SELECT COUNT(*) INTO total FROM sales;
+RETURN total;
+END; $total$
+LANGUAGE PLPGSQL;
+
+SELECT num_samples();
+-- End of Exercise 30: Creating Functions without Arguments
+
+-- Start of Activity 14: Defining a Maximum Sale Function
+CREATE FUNCTION max_sale() RETURNS integer AS $big_sale$
+DECLARE big_sale integer;
+BEGIN
+SELECT MAX(sales_amount) INTO big_sale FROM sales;
+RETURN big_sale;
+END; $big_sale$
+LANGUAGE PLPGSQL;
+
+SELECT max_sale();
+-- End of Activity 14: Defining a Maximum Sale Function
+
+-- Start of Exercise 31: Creating Functions with Arguments Using a Single Function
+CREATE FUNCTION avg_sales(channel_type TEXT) RETURNS numeric AS $channel_avg$
+DECLARE channel_avg numeric;
+BEGIN
+SELECT AVG(sales_amount) INTO channel_avg FROM sales WHERE channel=channel_type;
+RETURN channel_avg;
+END; $channel_avg$
+LANGUAGE PLPGSQL;
+
+SELECT avg_sales('internet');
+SELECT avg_sales('dealership');
+-- End of Exercise 31: Creating Functions with Arguments Using a Single Function
+
+-- Start of Activity 15: Creating Functions with Arguments
+CREATE FUNCTION avg_sales_window(start_date TEXT, end_date TEXT) RETURNS numeric AS $avg_sale$
+    -- CREATE FUNCTION avg_sales_window(start_date DATE, end_date DATE) RETURNS numeric AS $avg_sale$
+DECLARE avg_sale numeric;
+BEGIN
+SELECT AVG(sales_amount) INTO w_avg_sale FROM sales WHERE sales_transaction_date BETWEEN start_date::DATE AND end_date::DATE;
+    -- SELECT AVG(sales_amount) INTO w_avg_sale FROM sales WHERE sales_transaction_date > start_date AND  sales_transaction_date < end_date;
+RETURN avg_sale;
+END; $avg_sale$
+LANGUAGE PLPGSQL;
+
+SELECT avg_sales_window('2013-04-12', '2014-04-12');
+-- End of Activity 15: Creating Functions with Arguments
+
+
+-- Killing long queries
+    -- Simulation of query using SELECT pg_sleep(1000);
+SELECT pid, query FROM pg_stat_activity WHERE state = 'active';
+SELECT pg_cancel_backend(pid_num);      -- Reduces possibility of corruption
+SELECT pg_terminate_backend(pid_num);   -- No reduction
