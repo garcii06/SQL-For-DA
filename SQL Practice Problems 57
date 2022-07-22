@@ -100,3 +100,88 @@ ON ords.ShipVia = shps.ShipperID
 WHERE OrderID < 10300;
 
 -- Intermediate Problems
+
+-- 20. Categories, and the total products in each category
+SELECT CategoryName, COUNT(prod.CategoryID) AS TotalProducts
+FROM Northwind..Categories cate JOIN Northwind..Products prod
+	ON cate.CategoryID = prod.CategoryID
+GROUP BY CategoryName
+ORDER BY 2 DESC;
+
+-- 21. Total customers per country/city
+SELECT Country, City, COUNT(*) AS TotalCustomers
+FROM Northwind..Customers
+GROUP BY Country, City
+ORDER BY 3 DESC;
+
+-- 22. Products that need reordering
+SELECT ProductID, ProductName, UnitsInStock, ReorderLevel
+FROM Northwind..Products
+WHERE UnitsInStock < ReorderLevel
+ORDER BY ProductID;
+
+-- 23. Products that need reordering, continued
+SELECT ProductID, ProductName, UnitsInStock, UnitsOnOrder, ReorderLevel, Discontinued 
+FROM Northwind..Products
+WHERE ((UnitsInStock + UnitsOnOrder) <= ReorderLevel) AND Discontinued = 0
+ORDER BY ProductID;
+
+-- 24. Customer list by region
+SELECT CustomerID, CompanyName, Region, 
+CASE 
+	WHEN Region IS NULL THEN 0
+	ELSE 1
+	END AS RegionFilter
+FROM Northwind..Customers
+ORDER BY RegionFilter DESC, Region, CustomerID;
+
+-- 25. High freight charges
+SELECT TOP 3 ShipCountry, AVG(Freight) AS AverageFreight
+FROM Northwind..Orders
+GROUP BY ShipCountry
+ORDER BY AverageFreight DESC;
+
+-- 26. High freight charges - 2015
+SELECT TOP 3 ShipCountry, AVG(Freight) AS AverageFreight
+FROM Northwind..Orders
+WHERE YEAR(OrderDate) = 2015
+GROUP BY ShipCountry
+ORDER BY AverageFreight DESC;
+
+-- 27. High freight charges with between
+SELECT TOP 3 ShipCountry ,AverageFreight = avg(freight)
+FROM Northwind..Orders
+WHERE OrderDate BETWEEN '1/1/2015' AND '12/31/2015'
+GROUP BY ShipCountry
+ORDER BY AverageFreight DESC;
+
+SELECT OrderID, OrderDate
+FROM Northwind..Orders
+WHERE OrderDate > '12/31/2015' AND OrderDate < '01/01/2016' AND ShipCountry IN ('France');
+
+-- 28. High freight charges - last year 
+SELECT TOP 3 ShipCountry, AVG(Freight) AS AverageFreight
+FROM Northwind..Orders
+WHERE OrderDate > (SELECT DATEADD(year, -1, MAX(OrderDate)) FROM Northwind..Orders)
+GROUP BY ShipCountry
+ORDER BY AverageFreight DESC;
+
+-- 29. Inventory list
+SELECT Empl.EmployeeID, LastName, Ords.OrderID, ProductName, Quantity
+FROM (Northwind..Employees Empl JOIN Northwind..Orders Ords
+	ON Empl.EmployeeID = Ords.EmployeeID) JOIN Northwind..OrderDetails Ordd 
+	ON Ords.OrderID = Ordd.OrderID JOIN Northwind..Products Prod
+	ON Ordd.ProductID = Prod.ProductID
+ORDER BY Ords.OrderID, Prod.ProductID;
+
+-- 30. Customers with no orders
+SELECT Cust.CustomerID AS Customer_CustomerID, Ords.CustomerID AS Orders_CustomerID
+FROM Northwind..Customers Cust LEFT JOIN Northwind..Orders Ords
+	ON Cust.CustomerID = Ords.CustomerID
+WHERE Ords.OrderID IS NULL;
+
+-- 31. Customers with no orders for EmployeeID 4
+SELECT Cust.CustomerID AS Customer_CustomerID, Ords.CustomerID AS Orders_CustomerID
+FROM Northwind..Customers Cust LEFT JOIN Northwind..Orders Ords
+	ON Cust.CustomerID = Ords.CustomerID AND Ords.EmployeeID = 4
+WHERE Ords.OrderID IS NULL;
